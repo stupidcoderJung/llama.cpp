@@ -79,8 +79,8 @@ if (BUILD_SHARED_LIBS)
     set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
-# TODO: use list(APPEND LLAMA_COMMON_EXTRA_LIBS ...)
-set(LLAMA_COMMON_EXTRA_LIBS build_info)
+set(LLAMA_COMMON_PRIVATE_LIBS build_info)
+set(LLAMA_COMMON_PUBLIC_LIBS "")
 
 if (LLAMA_CURL)
     # Use curl to download model url
@@ -90,11 +90,11 @@ if (LLAMA_CURL)
     endif()
     target_compile_definitions(${TARGET} PUBLIC LLAMA_USE_CURL)
     include_directories(${CURL_INCLUDE_DIRS})
-    set(LLAMA_COMMON_EXTRA_LIBS ${LLAMA_COMMON_EXTRA_LIBS} ${CURL_LIBRARIES})
+    list(APPEND LLAMA_COMMON_PUBLIC_LIBS ${CURL_LIBRARIES})
 elseif (LLAMA_HTTPLIB)
     # otherwise, use cpp-httplib
     target_compile_definitions(${TARGET} PUBLIC LLAMA_USE_HTTPLIB)
-    set(LLAMA_COMMON_EXTRA_LIBS ${LLAMA_COMMON_EXTRA_LIBS} cpp-httplib)
+    list(APPEND LLAMA_COMMON_PUBLIC_LIBS cpp-httplib)
 endif()
 
 if (LLAMA_LLGUIDANCE)
@@ -138,12 +138,14 @@ if (LLAMA_LLGUIDANCE)
 
     target_include_directories(${TARGET} PRIVATE ${LLGUIDANCE_PATH})
     # Add platform libraries to the main target
-    set(LLAMA_COMMON_EXTRA_LIBS ${LLAMA_COMMON_EXTRA_LIBS} llguidance ${LLGUIDANCE_PLATFORM_LIBS})
+    list(APPEND LLAMA_COMMON_PUBLIC_LIBS llguidance ${LLGUIDANCE_PLATFORM_LIBS})
 endif ()
 
 target_include_directories(${TARGET} PUBLIC . ../vendor)
 target_compile_features   (${TARGET} PUBLIC cxx_std_17)
-target_link_libraries     (${TARGET} PRIVATE ${LLAMA_COMMON_EXTRA_LIBS} PUBLIC llama Threads::Threads)
+target_link_libraries     (${TARGET}
+    PRIVATE ${LLAMA_COMMON_PRIVATE_LIBS}
+    PUBLIC llama Threads::Threads ${LLAMA_COMMON_PUBLIC_LIBS})
 
 
 #
