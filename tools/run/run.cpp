@@ -23,8 +23,12 @@
 
 #if defined(LLAMA_USE_CURL)
 #    include <curl/curl.h>
-#else
+#elif defined(LLAMA_USE_HTTPLIB)
 #    include "http.h"
+#endif
+
+#if !defined(LLAMA_USE_CURL)
+using curl_off_t = long long; // fallback for progress helpers when cURL is unavailable
 #endif
 
 #include <signal.h>
@@ -430,7 +434,7 @@ class HttpClient {
         return 0;
     }
 
-#ifdef LLAMA_USE_CURL
+#if defined(LLAMA_USE_CURL)
 
     ~HttpClient() {
         if (chunk) {
@@ -536,9 +540,7 @@ class HttpClient {
         return curl_easy_perform(curl);
     }
 
-#else // LLAMA_USE_CURL is not defined
-
-#define curl_off_t long long  // temporary hack
+#elif defined(LLAMA_USE_HTTPLIB)
 
   private:
     // this is a direct translation of the cURL download() above
@@ -643,6 +645,15 @@ class HttpClient {
             return 1;
         }
         return 0;
+    }
+
+#else
+
+  private:
+    int download(const std::string &, const std::vector<std::string> &, const std::string &, const bool,
+                 std::string *) {
+        printe("HTTP downloads are disabled in this build (LLAMA_CURL=OFF, LLAMA_HTTPLIB=OFF).\n");
+        return 1;
     }
 
 #endif // LLAMA_USE_CURL
